@@ -1,0 +1,15 @@
+[Unit]
+Description=Optolink API for Viessmann heating controllers
+After=network.target
+
+[Service]
+User=optolink
+Group=optolink
+SupplementaryGroups=dialout
+EnvironmentFile=-/etc/default/optolink
+ExecStart=/opt/optolink/venv/bin/optolink-api --config /etc/optolink/optolink.xml $OPTOLINK_ARGS
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

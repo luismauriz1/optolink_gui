@@ -80,15 +80,43 @@ ISO-String und Zeitprogramme als Liste:
 [{"on": "05:30", "off": "08:00"}, {"on": "16:00", "off": "22:00"}]
 ```
 
-Beispiele:
+### Per Kommandozeile (curl)
+
+Auf dem Rechner, auf dem die API läuft, `localhost` verwenden, sonst Hostname/IP (z.B. `raspberrypi`).
+Thing- und Channel-IDs stammen aus der `optolink.xml` (Liste: `curl -s http://raspberrypi:8000/api/things`).
+
+Werte lesen:
 
 ```sh
-curl http://raspberrypi:8000/api/things/heating/channels/outside_temp
+# alle Werte, formatiert
+curl -s http://raspberrypi:8000/api/values | python3 -m json.tool
+
+# einen Wert
+curl -s http://raspberrypi:8000/api/things/heating/channels/outside_temp
 # {"thing":"heating","channel":"outside_temp","value":7.4}
 
-curl -X PUT http://raspberrypi:8000/api/things/hotwater/channels/set_temp \
-     -H 'Content-Type: application/json' -d '{"value": 50}'
+# laufend beobachten (alle 10 s)
+watch -n 10 'curl -s http://raspberrypi:8000/api/values | python3 -m json.tool'
 ```
+
+Werte setzen, z.B. Raumsolltemperatur auf 20 °C:
+
+```sh
+# 1. aktuellen Wert merken
+curl -s http://raspberrypi:8000/api/things/circuit2/channels/room_set_temp
+
+# 2. setzen
+curl -s -X PUT http://raspberrypi:8000/api/things/circuit2/channels/room_set_temp \
+     -H 'Content-Type: application/json' -d '{"value": 20}'
+# {"thing":"circuit2","channel":"room_set_temp","value":20}
+```
+
+Die Antwort enthält den Wert, der nach dem Schreiben von der Steuerung zurückgelesen wurde.
+Zahlen werden ohne Teiler angegeben (`{"value": 1.6}` bei `divider="10"`), Schalter als
+`true`/`false`, Zeitprogramme als Liste wie oben.
+
+Vor dem ersten Schreiben empfiehlt es sich, alle reinen Messwerte (Temperaturen, Zähler, …) in der
+`optolink.xml` mit `readonly="true"` zu schützen – ohne dieses Attribut ist jeder Channel schreibbar.
 
 Statuscodes: `404` unbekanntes Thing/Channel, `405` Channel ist schreibgeschützt,
 `422` ungültiger Wert, `502` Steuerung lehnt die Adresse ab, `503` keine Verbindung zum Adapter.
@@ -136,6 +164,21 @@ WantedBy=multi-user.target
 ```sh
 sudo systemctl enable --now optolink
 ```
+
+## Debian-Paket
+
+Auf einem Debian / Raspberry Pi OS (mit Internetzugang) bauen, optional mit der eigenen Konfiguration:
+
+```sh
+cd python
+bash debian/build-deb.sh optolink.xml     # erzeugt dist/optolink-api_<version>_all.deb
+sudo apt install ./dist/optolink-api_*_all.deb
+```
+
+Das Paket legt den Benutzer `optolink` (Gruppe `dialout`) an, installiert die Abhängigkeiten in
+`/opt/optolink/venv` und startet den Dienst `optolink`. Konfiguration: `/etc/optolink/optolink.xml`,
+Startoptionen (z.B. Port): `/etc/default/optolink`. Nach Änderungen: `sudo systemctl restart optolink`,
+Log: `journalctl -u optolink -f`.
 
 ## Tests
 

@@ -9,3 +9,10 @@ start.sh
 start_debug.sh
 things-types vs optolink - comparison.xlsx
 .gitignore
+/^config_xml_from_my_heating/
+python/build/
+python/dist/
+python/*.egg-info/
+python/.venv/
+__pycache__/
+.pytest_cache/

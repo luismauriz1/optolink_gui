@@ -1,0 +1,29 @@
+#!/bin/sh
+set -e
+
+VENV=/opt/optolink/venv
+
+if [ "$1" = configure ]; then
+    if ! getent passwd optolink >/dev/null; then
+        adduser --system --group --home /opt/optolink --no-create-home optolink
+    fi
+    adduser optolink dialout >/dev/null
+
+    # recreate the venv if the system Python was upgraded
+    if ! "$VENV/bin/python" -c '' 2>/dev/null; then
+        rm -rf "$VENV"
+        python3 -m venv "$VENV"
+    fi
+    WHEEL="$(ls /opt/optolink/optolink_api-*.whl)"
+    "$VENV/bin/pip" install --quiet --upgrade pip
+    "$VENV/bin/pip" install --quiet "$WHEEL"
+    "$VENV/bin/pip" install --quiet --force-reinstall --no-deps "$WHEEL"
+
+    if [ -d /run/systemd/system ]; then
+        systemctl daemon-reload
+        systemctl enable optolink.service
+        systemctl restart optolink.service
+    fi
+fi
+
+exit 0

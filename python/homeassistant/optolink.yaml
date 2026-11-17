@@ -1,0 +1,95 @@
+# Home Assistant configuration for the Optolink API (matches optolink.example.xml).
+# Paste into configuration.yaml (merge with existing rest:, rest_command: or template: keys)
+# and replace 192.168.1.218 with the address of the computer running optolink-api.
+
+rest:
+  - resource: http://192.168.1.218:8000/api/values
+    scan_interval: 30
+    timeout: 30
+    sensor:
+      - name: Heizung Aussentemperatur
+        unique_id: optolink_heating_outside_temp
+        value_template: "{{ value_json.heating.outside_temp }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+      - name: Heizung Systemzeit
+        unique_id: optolink_heating_systemtime
+        value_template: "{{ value_json.heating.systemtime }}"
+      - name: Heizung Warmwasser
+        unique_id: optolink_hotwater_temp
+        value_template: "{{ value_json.hotwater.temp }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+      - name: Heizung Warmwasser Soll
+        unique_id: optolink_hotwater_set_temp
+        value_template: "{{ value_json.hotwater.set_temp }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+      - name: Heizung Vorlauf
+        unique_id: optolink_circuit2_flow_temp
+        value_template: "{{ value_json.circuit2.flow_temp }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+      - name: Heizung Raum Soll
+        unique_id: optolink_circuit2_room_set_temp
+        value_template: "{{ value_json.circuit2.room_set_temp }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+      - name: Heizung Betriebsart
+        unique_id: optolink_circuit2_operationmode
+        value_template: "{{ value_json.circuit2.operationmode }}"
+      - name: Heizung Zeitprogramm Montag
+        unique_id: optolink_circuit2_timer_mo
+        value_template: >-
+          {% for slot in value_json.circuit2.timer_mo %}{{ slot.on }}-{{ slot.off }} {% endfor %}
+    binary_sensor:
+      - name: Heizung Stoerung
+        unique_id: optolink_heating_malfunction
+        value_template: "{{ value_json.heating.malfunction }}"
+        device_class: problem
+
+rest_command:
+  optolink_set:
+    url: "http://192.168.1.218:8000/api/things/{{ thing }}/channels/{{ channel }}"
+    method: put
+    content_type: application/json
+    payload: '{"value": {{ value }}}'
+    timeout: 30
+
+template:
+  - number:
+      - name: Heizung Warmwasser Soll einstellen
+        unique_id: optolink_hotwater_set_temp_number
+        state: "{{ states('sensor.heizung_warmwasser_soll') }}"
+        min: 10
+        max: 60
+        step: 1
+        unit_of_measurement: "°C"
+        set_value:
+          - action: rest_command.optolink_set
+            data:
+              thing: hotwater
+              channel: set_temp
+              value: "{{ value | int }}"
+          - action: homeassistant.update_entity
+            target:
+              entity_id: sensor.heizung_warmwasser_soll
+      - name: Heizung Raum Soll einstellen
+        unique_id: optolink_circuit2_room_set_temp_number
+        state: "{{ states('sensor.heizung_raum_soll') }}"
+        min: 10
+        max: 30
+        step: 1
+        unit_of_measurement: "°C"
+        set_value:
+          - action: rest_command.optolink_set
+            data:
+              thing: circuit2
+              channel: room_set_temp
+              value: "{{ value | int }}"
+          - action: homeassistant.update_entity
+            target:
+              entity_id: sensor.heizung_raum_soll

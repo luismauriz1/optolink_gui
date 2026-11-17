@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "optolink-api"
+version = "2.0.0"
+description = "REST API with Swagger UI for Viessmann heating controllers via Optolink"
+readme = "README.md"
+license = { text = "LGPL-3.0-only" }
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "pyserial>=3.5",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "httpx>=0.27"]
+
+[project.scripts]
+optolink-api = "optolink.__main__:main"
+
+[tool.setuptools]
+packages = ["optolink"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

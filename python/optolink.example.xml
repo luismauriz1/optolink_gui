@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Configuration of the Optolink API (same format as the Java version).
+
+protocol: "300" (newer controllers, VS2) or "KW" (older controllers, VS1)
+device:   device id of the controller (informational only)
+
+<tty> can be
+  - a local serial port:        /dev/ttyUSB0, /dev/ttyAMA0, COM3
+  - a network adapter:          192.168.178.25:10001 (raw TCP, e.g. ser2net or ESP-Link)
+  - any pyserial URL:           rfc2217://192.168.178.25:4000
+
+Channel or thing ids starting with '*' are not listed and not read in bulk,
+but can be read directly (without the '*').
+
+Telegram attributes:
+  address   address on the controller (hex)
+  type      boolean, byte, ubyte, short, ushort, int, uint, date (read only), timer
+  divider   raw value / divider = value (optional, default 1)
+  readonly  "true" prevents writing via the API (optional, default false)
+
+Addresses differ between controllers, see https://github.com/openv/openv/wiki
+-->
+<optolink device="20cb" protocol="KW">
+
+     <adapterID>VITODENS</adapterID>
+     <tty>/dev/ttyUSB0</tty>
+     <ttytimeout>2000</ttytimeout>           <!-- read timeout in milliseconds -->
+
+     <thing type="heating" id="heating">
+          <description>Viessmann Vitodens 300-W</description>
+          <channel id="*systemid">
+               <description>System ID</description>
+               <telegram address="00F8" type="ushort" readonly="true"/>
+          </channel>
+          <channel id="systemtime">
+               <description>System date and time</description>
+               <telegram address="088E" type="date"/>
+          </channel>
+          <channel id="outside_temp">
+               <description>Outside temperature</description>
+               <telegram address="0800" type="short" divider="10" readonly="true"/>
+          </channel>
+          <channel id="malfunction">
+               <description>General malfunction</description>
+               <telegram address="0A82" type="boolean" readonly="true"/>
+          </channel>
+     </thing>
+
+     <thing type="storagetank" id="hotwater">
+          <description>Hot water</description>
+          <channel id="temp">
+               <description>Hot water temperature</description>
+               <telegram address="0804" type="short" divider="10" readonly="true"/>
+          </channel>
+          <channel id="set_temp">
+               <description>Hot water target temperature</description>
+               <telegram address="6300" type="ubyte"/>
+          </channel>
+          <channel id="timer_mo">
+               <description>Hot water timer Monday</description>
+               <telegram address="2100" type="timer"/>
+          </channel>
+     </thing>
+
+     <thing type="circuit" id="circuit2">
+          <description>Heating circuit 2</description>
+          <channel id="flow_temp">
+               <description>Flow temperature</description>
+               <telegram address="3900" type="short" divider="10" readonly="true"/>
+          </channel>
+          <channel id="operationmode">
+               <description>Operation mode</description>
+               <telegram address="3500" type="byte"/>
+          </channel>
+          <channel id="room_set_temp">
+               <description>Room target temperature</description>
+               <telegram address="3306" type="byte"/>
+          </channel>
+          <channel id="timer_mo">
+               <description>Heating timer Monday</description>
+               <telegram address="3000" type="timer"/>
+          </channel>
+     </thing>
+</optolink>
